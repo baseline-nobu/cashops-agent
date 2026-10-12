@@ -3,3 +3,14 @@ node_modules/
 .env.local
 .next/
 dist/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local runtime data
+cashflow_events.json
+human_overrides.json
+
+# macOS
+.DS_Store
