@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import json
 import base64
@@ -6,6 +7,9 @@ import urllib.request
 
 
 def load_env(path=".env.local"):
+    if not Path(path).exists():
+        return
+
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
