@@ -2,7 +2,7 @@ import os
 import json
 import time
 
-from google import genai
+from openai import OpenAI
 
 
 # =========================================================
@@ -25,26 +25,26 @@ def load_env(path=".env.local"):
                 continue
 
             key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
             os.environ[key] = value
 
 
 load_env()
 
 
-client = genai.Client(
-    api_key=os.environ["GEMINI_API_KEY"]
+client = OpenAI(
+    api_key=os.environ["NEBIUS_API_KEY"],
+    base_url="https://api.tokenfactory.nebius.com/v1/",
 )
 
 
 # =========================================================
-# Model fallback
+# Nebius / NVIDIA model
 # =========================================================
 
 MODEL_CANDIDATES = [
-    "gemini-3.8-flash",
-    "gemini-3.7-flash",
-    "gemini-3.5-flash",
-    "gemini-2.5-flash",
+    "nvidia/Nemotron-3_5-Lightning",
 ]
 
 
@@ -54,10 +54,10 @@ def is_retryable_model_error(error):
     retryable_markers = [
         "503",
         "unavailable",
-        "high demand",
         "temporarily",
         "resource exhausted",
         "429",
+        "timeout",
     ]
 
     return any(
@@ -71,15 +71,25 @@ def generate_with_fallback(prompt):
 
     for model_name in MODEL_CANDIDATES:
 
-        # Small retry loop for temporary spikes.
         for attempt in range(2):
 
             try:
-                response = (
-                    client.models.generate_content(
-                        model=model_name,
-                        contents=prompt,
-                    )
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    temperature=0.0,
+                    max_tokens=2200,
+                    response_format={"type": "json_object"},
+                    extra_body={
+                        "chat_template_kwargs": {
+                            "enable_thinking": False
+                        }
+                    },
                 )
 
                 if response is None:
@@ -87,8 +97,13 @@ def generate_with_fallback(prompt):
                         f"{model_name} returned no response."
                     )
 
+                if not response.choices:
+                    raise RuntimeError(
+                        f"{model_name} returned no choices."
+                    )
+
                 response_text = (
-                    response.text
+                    response.choices[0].message.content
                     or ""
                 ).strip()
 
@@ -98,7 +113,7 @@ def generate_with_fallback(prompt):
                     )
 
                 return (
-                    response,
+                    response_text,
                     model_name,
                 )
 
@@ -113,11 +128,8 @@ def generate_with_fallback(prompt):
                 if attempt == 0:
                     time.sleep(1.5)
 
-        # Both attempts failed:
-        # continue to the next model.
-
     raise RuntimeError(
-        "All Gemini fallback models failed. "
+        "All Nebius model attempts failed. "
         + " | ".join(errors)
     )
 
@@ -467,7 +479,7 @@ DATA:
 """
 
 
-    response, used_model = (
+    text, used_model = (
         generate_with_fallback(
             prompt
         )
@@ -475,7 +487,7 @@ DATA:
 
 
     text = (
-        response.text
+        text
         or ""
     ).strip()
 
