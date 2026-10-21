@@ -1,10 +1,17 @@
+
 # CashOps Agent
 
-CashOps Agent is a financial operations agent for small businesses.
+CashOps Agent helps small businesses see potential cash pressure earlier by turning invoice data into a human-reviewed 30 / 60 / 90-day cash outlook and explainable AI risk insights.
 
-It connects PayPal Sandbox invoice data to a human-in-the-loop review workflow, generates deterministic 30 / 60 / 90-day cash forecasts, and uses NVIDIA Nemotron through Nebius Token Factory to interpret cash-flow risk.
+The current prototype uses PayPal Sandbox invoice data as its financial data source.
 
-The financial calculations are deterministic. AI is used only to interpret established forecast evidence.
+Its architecture intentionally separates three responsibilities:
+
+- **Deterministic logic** calculates financial balances and the 30 / 60 / 90-day outlook.
+- **Human Review** confirms missing or uncertain financial information.
+- **NVIDIA Nemotron** interprets the established evidence and explains risk, uncertainty, unresolved issues, and recommended actions.
+
+The AI model does not calculate balances or invent financial values.
 
 ## Live Demo
 
@@ -29,7 +36,7 @@ The current prototype can:
 - Detect missing or uncertain fields
 - Request human confirmation when required
 - Store human-confirmed values locally without writing back to PayPal
-- Calculate deterministic 30 / 60 / 90-day cash forecasts
+- Calculate deterministic 30 / 60 / 90-day cash outlooks
 - Separate confirmed cash flow from draft-invoice scenarios
 - Show the financial impact of human confirmation
 - Generate AI-assisted cash-risk reviews
@@ -53,7 +60,7 @@ Human Review
       ↓
 Deterministic Forecast Engine
       ↓
-30 / 60 / 90 Day Forecast
+30 / 60 / 90 Day Cash Outlook
       ↓
 NVIDIA Nemotron
 via Nebius Token Factory
@@ -77,17 +84,35 @@ This keeps uncertain data separate from confirmed financial assumptions and make
 
 ## Deterministic Financial Calculations
 
-Cash balances and 30 / 60 / 90-day forecasts are calculated by the application itself.
+Cash balances and 30 / 60 / 90-day outlooks are calculated by the application itself.
 
 The AI model does not calculate balances or invent financial values.
 
 This separation is intentional:
 
 - Deterministic logic handles financial calculations
-- Human review handles missing or uncertain information
+- Human Review handles missing or uncertain information
 - AI interprets the established evidence
 
 This improves explainability and reduces the risk of AI-generated financial errors.
+
+## Why NVIDIA Nemotron?
+
+CashOps Agent uses **NVIDIA Nemotron-3.5-Lightning through Nebius Token Factory** as an interpretation and decision-support layer.
+
+The purpose of the model is not to replace deterministic financial calculations.
+
+Instead, Nemotron receives structured forecast evidence produced by the application and interprets:
+
+- Cash Risk
+- Data Confidence
+- Unresolved Issues
+- Follow-up Questions
+- Recommended Actions
+
+This separation allows the application to keep financial calculations deterministic while using an AI model for the parts where language understanding, contextual interpretation, and explanation provide additional value.
+
+Nebius Token Factory provides the hosted inference endpoint used by the deployed application.
 
 ## NVIDIA Nemotron
 
@@ -115,6 +140,20 @@ Nebius Token Factory provides the API endpoint used by the Streamlit application
 
 The application uses an OpenAI-compatible API interface.
 
+## Current Limitations
+
+This project is a hackathon prototype and intentionally has a limited scope.
+
+- The current prototype uses **PayPal Sandbox** rather than real customer financial data.
+- The opening balance is a configured assumption for the demonstration.
+- The current prototype focuses primarily on **invoice-driven cash events** and does not represent a complete accounting or treasury system.
+- Payroll, taxes, bank-account transactions, and full expense integrations are not included in the current prototype.
+- Mixed-currency aggregation is intentionally blocked until a proper FX conversion layer is implemented.
+- Human confirmation is required when important financial information is missing or uncertain.
+- NVIDIA Nemotron provides interpretation and recommendations; it does not autonomously execute financial transactions.
+
+These limitations are intentional. CashOps Agent prioritizes traceable assumptions and reliable financial calculations rather than asking an AI model to invent missing financial data.
+
 ## How to Test
 
 1. Open the live demo:  
@@ -128,7 +167,7 @@ The application uses an OpenAI-compatible API interface.
 
 5. Confirm any missing or uncertain information if required
 
-6. Review the deterministic **30 / 60 / 90 Day Forecast**
+6. Review the deterministic **30 / 60 / 90 Day Cash Outlook**
 
 7. Review the impact of human confirmation on the scenario forecast
 
@@ -202,7 +241,7 @@ Fetches invoice data from PayPal Sandbox and converts the source data into appli
 
 ### forecast.py
 
-Calculates deterministic 30 / 60 / 90-day cash forecasts.
+Calculates deterministic 30 / 60 / 90-day cash outlooks.
 
 ### human_review.py
 
